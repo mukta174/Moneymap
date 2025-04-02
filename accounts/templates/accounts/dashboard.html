@@ -28,7 +28,7 @@
         <p>Your profile indicates you want to track: <strong>{{ user.profile.get_bank_to_track_display }}</strong></p>
          <p>Occupation: {{ user.profile.occupation|default:"Not specified" }}</p>
         <hr>
-        <p><a href="{% url 'emailparser:fetch_page' %}">Go to Email Parser</a></p> {# Link to your parser app #}
+        <p><a href="{% url 'emailparser:fetch_expenses' %}">Go to Email Parser</a></p> {# Link to your parser app #}
         <!-- Add dashboard content here -->
     </div>
 

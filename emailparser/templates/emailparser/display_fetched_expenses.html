@@ -4,26 +4,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fetched Transaction Results</title>
-    {# --- Use the styles from your previous fetch_page.html example --- #}
+    <title>Your Expense Transactions</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
-        .error { color: red; font-weight: bold; margin-bottom: 10px; border: 1px solid red; padding: 10px; background-color: #ffeeee; border-radius: 4px; } /* Enhanced error style */
-        .success { color: green; font-weight: bold; } /* Made success bold */
+        .error { color: red; font-weight: bold; margin-bottom: 10px; border: 1px solid red; padding: 10px; background-color: #ffeeee; border-radius: 4px; }
+        .success { color: green; font-weight: bold; }
         .info { color: navy; }
-        .transaction-list { margin-top: 15px; border-collapse: collapse; width: 100%; } /* Reduced top margin */
-        .transaction-list th, .transaction-list td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; } /* Added vertical-align */
-        .transaction-list th { background-color: #f2f2f2; font-weight: bold; } /* Made header bold */
-        button, .button-link { display: inline-block; padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white !important; border: none; border-radius: 4px; font-size: 1em; text-decoration: none; margin-right: 10px; } /* Added button-link class */
+        .transaction-list { margin-top: 15px; border-collapse: collapse; width: 100%; }
+        .transaction-list th, .transaction-list td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        .transaction-list th { background-color: #f2f2f2; font-weight: bold; }
+        button, .button-link { display: inline-block; padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white !important; border: none; border-radius: 4px; font-size: 1em; text-decoration: none; margin-right: 10px; }
         button:hover, .button-link:hover { background-color: #0056b3; color: white !important; }
         hr { margin-top: 30px; margin-bottom: 30px; border: 0; border-top: 1px solid #eee; }
-         /* Styles for Django messages */
+        /* Styles for Django messages */
         .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
         .alert-danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
         .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
         .alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
         .alert-info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
-         /* Badge styles for category */
+        /* Badge styles for category */
         .badge { display: inline-block; padding: .35em .65em; font-size: .75em; font-weight: 700; line-height: 1; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; }
         .bg-primary { background-color: #0d6efd !important; }
         .bg-secondary { background-color: #6c757d !important; }
@@ -31,11 +30,21 @@
         .bg-danger { background-color: #dc3545 !important; }
         .bg-warning { background-color: #ffc107 !important; color: #000 !important; }
         .bg-info { background-color: #0dcaf0 !important; color: #000 !important; }
+        /* Form container styling */
+        .card { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; }
+        .card-header { background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #ddd; }
+        .card-body { padding: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .mt-2 { margin-top: 10px; }
+        .text-muted { color: #6c757d; }
+        .last-updated { background-color: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-    <h1>Transaction Fetch Results</h1>
+    <h1>Your Expense Transactions</h1>
     <p>Showing results for email: <strong>{{ user_email }}</strong></p>
 
     {# --- Display Django Messages (Success, Info, Warnings set in the view) --- #}
@@ -47,81 +56,103 @@
         {% endfor %}
     {% endif %}
 
-    {# --- Display Results Area --- #}
-    {% if show_results %} {# Check if view intended to show results #}
+    {% if last_fetch %}
+    <div class="last-updated">
+        <p><strong>Last updated:</strong> {{ last_fetch }}</p>
+    </div>
+    {% endif %}
 
-        {# Display Specific Errors gathered during fetch/categorization #}
-        {% if errors %}
-            <div class="error">
-                <h4>Encountered Errors:</h4>
-                <ul>
-                    {% for error in errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
+    {# Display model error if present #}
+    {% if model_error %}
+    <div class="alert alert-warning">
+        <p><strong>Note:</strong> {{ model_error }}</p>
+    </div>
+    {% endif %}
 
-        {# Display Transactions Table - This is the critical part #}
-        {% if transactions %} {# Check if the transactions list has items #}
-             <h4 style="margin-top: 20px;">Transactions Found:</h4>
-             <table class="transaction-list">
-                <thead>
+    {# --- Form to fetch new transactions --- #}
+    <div class="card">
+        <div class="card-header">
+            <h3>Fetch New Transactions</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'emailparser:fetch_expenses' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.app_password.id_for_label }}">App Password for {{ user_email }}</label>
+                    {{ form.app_password }}
+                </div>
+                <button type="submit" name="fetch_new" class="button-link mt-2">
+                    Refresh Transactions
+                </button>
+                <p class="text-muted mt-2">
+                    <small>Clicking this button will fetch new transactions without removing your existing stored transactions.</small>
+                </p>
+            </form>
+        </div>  
+    </div>
+
+    {# --- Display Specific Errors gathered during fetch/categorization --- #}
+    {% if errors %}
+        <div class="error">
+            <h4>Encountered Errors:</h4>
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {# --- Display Transactions Table --- #}
+    {% if transactions %}
+        <h4 style="margin-top: 20px;">Transactions Found:</h4>
+        <table class="transaction-list">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount (Rs.)</th>
+                    <th>Party Name</th>
+                    <th>VPA ID</th>
+                    <th>Predicted Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in transactions %}
                     <tr>
-                        {# Ensure these headers match the cells below #}
-                        <th>Date</th>
-                        <th>Amount (Rs.)</th>
-                        <th>Party Name</th>
-                        <th>VPA ID</th>
-                        <th>Predicted Category</th>
+                        <td>{{ txn.date|default:"N/A" }}</td>
+                        <td>{{ txn.amount|floatformat:2|default:"N/A" }}</td>
+                        <td>{{ txn.party_name|default:"N/A" }}</td>
+                        <td>{{ txn.vpa_id|default:"N/A" }}</td>
+                        <td>
+                            {% with category_str=txn.category|stringformat:"s" %}
+                                {% if category_str == 'Categorization Error' %}
+                                    <span class="badge bg-danger">{{ category_str }}</span>
+                                {% elif category_str == 'Unknown Description' %}
+                                    <span class="badge bg-secondary">{{ category_str }}</span>
+                                {% elif category_str == 'N/A (Model Error)' %}
+                                    <span class="badge bg-warning">{{ category_str }}</span>
+                                {% elif category_str %}
+                                    <span class="badge bg-primary">{{ category_str }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {# Loop through the list provided by the view #}
-                    {% for txn in transactions %}
-                        <tr>
-                            {# Access dictionary keys using the EXACT names from debug output #}
-                            <td>{{ txn.date|default:"N/A" }}</td>
-                            <td>{{ txn.amount|floatformat:2|default:"N/A" }}</td>
-                            <td>{{ txn.party_name|default:"N/A" }}</td>
-                            <td>{{ txn.vpa_id|default:"N/A" }}</td>
-                            <td>
-                                 {# Apply category styling #}
-                                 {% with category_str=txn.category|stringformat:"s" %} {# Convert numpy string just in case #}
-                                     {% if category_str == 'Categorization Error' %}
-                                        <span class="badge bg-danger">{{ category_str }}</span>
-                                     {% elif category_str == 'Unknown Description' %}
-                                         <span class="badge bg-secondary">{{ category_str }}</span>
-                                     {% elif category_str == 'N/A (Model Error)' %}
-                                         <span class="badge bg-warning">{{ category_str }}</span>
-                                     {% elif category_str %}
-                                         <span class="badge bg-primary">{{ category_str }}</span>
-                                     {% else %}
-                                         <span class="badge bg-secondary">N/A</span>
-                                     {% endif %}
-                                 {% endwith %}
-                            </td>
-                        </tr>
-                    {% empty %} {# This part runs ONLY if the transactions list is empty #}
-                        <tr>
-                            <td colspan="5" style="text-align: center;">No transaction details were extracted during this fetch.</td>
-                        </tr>
-                    {% endfor %} {# End of the for loop #}
-                </tbody>
-             </table>
-        {% elif not errors %} {# Show this only if transactions is empty AND there were no errors #}
-             <p class="info" style="margin-top: 20px;">No matching UPI transaction emails found or emails did not contain recognizable details.</p>
-        {% endif %} {# End if transactions #}
-
-    {% else %}
-         {# Optional: Message if page accessed unexpectedly #}
-         <p class="info">No results available. Please initiate a fetch first.</p>
-    {% endif %} {# end if show_results #}
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center;">No transaction details were found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif show_results and not errors %} 
+        <p class="info" style="margin-top: 20px;">No matching UPI transaction emails found or emails did not contain recognizable details.</p>
+    {% endif %}
 
     {# --- Links for Next Actions --- #}
     <div style="margin-top: 30px;">
-         <a href="{% url 'emailparser:fetch_expenses' %}" class="button-link">Fetch Again / Check for New</a>
-         <a href="{% url 'home' %}" class="button-link" style="background-color: #6c757d;">Back to Home</a> {# Ensure 'home' URL exists #}
+        <a href="{% url 'home' %}" class="button-link" style="background-color: #6c757d;">Back to Home</a>
     </div>
 
 </body>

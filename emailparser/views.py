@@ -1,16 +1,17 @@
 # email_parser/views.py
-
 import os
 import joblib
 import nltk # type: ignore
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required # Import login_required
-from django.contrib import messages # Import messages framework
+from django.contrib.auth.decorators import login_required 
+from django.contrib import messages 
 from django.conf import settings
-from .email_utils import get_transactions # Your existing email utility
-from .forms import AppPasswordForm # Import the form we defined earlier
+from django.utils import timezone
+from datetime import datetime
+from .email_utils import get_transactions 
+from .forms import AppPasswordForm
+from .models import StoredTransaction  # You'll need to create this model
 
-# --- NLTK Download Check (Keep as is) ---
 try:
     nltk.data.find('corpora/stopwords')
     print("DEBUG: NLTK stopwords found.")
@@ -21,9 +22,8 @@ except nltk.downloader.DownloadError: # Corrected exception type
         print("DEBUG: NLTK stopwords downloaded successfully.")
     except Exception as e:
         print(f"ERROR: Failed to download NLTK stopwords: {e}")
-# --- End NLTK Check ---
 
-# --- Model Loading (Keep as is, ensure MODEL_PATH is correct) ---
+#Model Loading
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'expense_classifier.pkl')
 MODEL = None
 MODEL_LOAD_ERROR = None
@@ -40,10 +40,71 @@ except Exception as e:
     MODEL_LOAD_ERROR = f"Error loading model '{MODEL_PATH}': {e}. Auto-categorization disabled."
     print(f"ERROR: {MODEL_LOAD_ERROR}")
     MODEL = None
-# --- End Model Load ---
 
 
-@login_required # Protect the view, ensure user is logged in
+def categorize_transactions(transactions):
+    """
+    Helper function to categorize transactions using the loaded model
+    """
+    if not MODEL:
+        # If model isn't available, mark all as N/A
+        for txn in transactions:
+            txn['category'] = 'N/A (Model Error)'
+        return transactions, []
+    
+    errors = []
+    for txn in transactions:
+        try:
+            description = txn.get('party_name', '')
+            if description:
+                predicted_category = MODEL.predict([description])[0]
+                txn['category'] = predicted_category
+                print(f"  DEBUG: Categorized '{description}' as '{predicted_category}'")
+            else:
+                txn['category'] = 'Unknown Description'
+                print("  DEBUG: Skipping categorization for transaction with empty description.")
+        except Exception as e:
+            txn['category'] = 'Categorization Error'
+            error_msg = f"Error categorizing '{description or 'N/A'}': {e}"
+            print(f"ERROR: {error_msg}")
+            errors.append(error_msg)
+    
+    return transactions, errors
+
+
+def save_transactions_to_db(user, transactions):
+    """
+    Save fetched transactions to database for this user
+    """
+    saved_count = 0
+    for txn in transactions:
+        # Use transaction_id or create a unique identifier to avoid duplicates
+        transaction_id = txn.get('transaction_id', None)
+        if not transaction_id:
+            # If no transaction_id is available, create one from date and amount
+            date_str = txn.get('date', str(datetime.now()))
+            amount = txn.get('amount', '0.00')
+            description = txn.get('party_name', 'unknown')
+            transaction_id = f"{date_str}_{amount}_{description}"
+        
+        # Check if this transaction is already stored
+        if not StoredTransaction.objects.filter(
+            user=user,
+            transaction_id=transaction_id
+        ).exists():
+            # Store new transaction
+            StoredTransaction.objects.create(
+                user=user,
+                transaction_id=transaction_id,
+                transaction_data=txn,
+                fetched_date=timezone.now()
+            )
+            saved_count += 1
+    
+    return saved_count
+
+
+@login_required 
 def fetch_and_categorize_expenses(request):
     """
     Handles requesting app password (GET) and fetching/categorizing expenses (POST).
@@ -53,110 +114,292 @@ def fetch_and_categorize_expenses(request):
     context = {
         'transactions': None,
         'errors': [],
-        'model_error': MODEL_LOAD_ERROR, # Pass model loading error to context
-        'form': None, # Will hold the AppPasswordForm instance
-        'user_email': user_email, # Pass user's email to template
-        'show_results': False # Flag to indicate if results should be shown
+        'model_error': MODEL_LOAD_ERROR, 
+        'form': None, #AppPasswordForm instance
+        'user_email': user_email,
+        'show_results': True,  # Always show results if there are stored transactions
+        'last_fetch': None
     }
 
-    # --- Check if user has an email address ---
     if not user_email:
         messages.error(request, "Your account profile needs an email address to fetch transactions.")
-        # Redirect to profile editing or home page
-        # return redirect('accounts:profile_edit') # Example redirect
         return redirect('home') # Redirect home for now
+    
+    # Get stored transactions for this user
+    stored_transactions = StoredTransaction.objects.filter(user=request.user).order_by('-transaction_data__date')
+    
+    if stored_transactions.exists():
+        # Get the latest fetch date
+        latest_transaction = stored_transactions.order_by('-fetched_date').first()
+        context['last_fetch'] = latest_transaction.fetched_date
+        
+        # Extract transaction data from stored transactions
+        context['transactions'] = [txn.transaction_data for txn in stored_transactions]
+        messages.info(request, f"Displaying {len(stored_transactions)} stored transactions. Last updated: {context['last_fetch']}")
 
-    # --- Handle POST request (Password submitted) ---
-    if request.method == 'POST':
+    # Handle fetch request
+    if request.method == 'POST' and 'fetch_new' in request.POST:
         form = AppPasswordForm(request.POST)
-        context['form'] = form # Put form in context even for POST (to show errors)
-
+        context['form'] = form
+        
         if form.is_valid():
             app_password = form.cleaned_data['app_password']
-            context['show_results'] = True # Indicate we should try showing results
-
-            # --- Call your existing fetching logic ---
-            messages.info(request, f"Attempting to fetch transactions for {user_email}... This may take a moment.")
-            print(f"DEBUG: Fetching transactions for {user_email} via trigger view...") # Updated debug log
+            
+            # Fetching logic
+            messages.info(request, f"Fetching new transactions for {user_email}... This may take a moment.")
+            print(f"DEBUG: Fetching transactions for {user_email} via trigger view...")
+            
             try:
                 result = get_transactions(user_email, app_password)
-                fetched_transactions = result.get('transactions')
+                fetched_transactions = result.get('transactions', [])
                 fetch_errors = result.get('errors', [])
-                context['transactions'] = fetched_transactions
                 context['errors'].extend(fetch_errors)
-
-                # --- Perform Auto-Categorization (if fetch was successful and model loaded) ---
-                if fetched_transactions and MODEL:
-                    print("DEBUG: Attempting auto-categorization...")
-                    for txn in fetched_transactions:
-                        try:
-                            # Use 'party_name' or adjust if your get_transactions returns a different key
-                            description = txn.get('party_name', '')
-                            if description:
-                                predicted_category = MODEL.predict([description])[0]
-                                txn['category'] = predicted_category # Add category to the dict
-                                print(f"  DEBUG: Categorized '{description}' as '{predicted_category}'")
-                            else:
-                                txn['category'] = 'Unknown Description'
-                                print("  DEBUG: Skipping categorization for transaction with empty description.")
-                        except Exception as e:
-                            txn['category'] = 'Categorization Error'
-                            error_msg = f"Error categorizing '{description or 'N/A'}': {e}"
-                            print(f"ERROR: {error_msg}")
-                            if error_msg not in context['errors']:
-                                context['errors'].append(error_msg)
-                    messages.success(request, "Fetched and categorized transactions.") # Overall success message
-
-                elif fetched_transactions and not MODEL:
-                    # Transactions fetched, but model failed to load
-                    warn_msg = "Transactions fetched, but auto-categorization is disabled."
-                    if MODEL_LOAD_ERROR and MODEL_LOAD_ERROR not in context['errors']:
-                       context['errors'].append(MODEL_LOAD_ERROR)
-                       warn_msg = f"Transactions fetched, but auto-categorization failed: {MODEL_LOAD_ERROR}"
-                    messages.warning(request, warn_msg)
-                    print(f"WARN: {warn_msg}")
-                    # Assign a default category or None if model isn't working
-                    for txn in fetched_transactions:
-                        txn['category'] = 'N/A (Model Error)'
-
-
+                
+                if fetched_transactions:
+                    # Auto-categorize the transactions
+                    categorized_transactions, categorization_errors = categorize_transactions(fetched_transactions)
+                    context['errors'].extend(categorization_errors)
+                    
+                    # Save transactions to database
+                    new_count = save_transactions_to_db(request.user, categorized_transactions)
+                    
+                    if new_count > 0:
+                        messages.success(request, f"Added {new_count} new transactions to your stored data.")
+                        
+                        # Refresh the transaction list with all stored transactions
+                        stored_transactions = StoredTransaction.objects.filter(user=request.user).order_by('-transaction_data__date')
+                        context['transactions'] = [txn.transaction_data for txn in stored_transactions]
+                        context['last_fetch'] = timezone.now()
+                    else:
+                        messages.info(request, "No new transactions found.")
+                
                 elif not fetched_transactions and not fetch_errors:
-                     messages.info(request, "No new transactions found.")
-
-                # Add general success/error messages based on results
+                    messages.info(request, "No new transactions found.")
+                
                 if fetch_errors:
-                     messages.error(request, "There were errors fetching transactions. See details below.")
-
-
+                    messages.error(request, "There were errors fetching transactions. See details below.")
+            
             except Exception as e:
-                # Catch unexpected errors during get_transactions or categorization
                 error_msg = f"An unexpected error occurred: {e}"
                 print(f"ERROR: {error_msg}")
                 messages.error(request, error_msg)
                 context['errors'].append(error_msg)
-
-            print("\n--- DEBUG VIEW: Final Context Before Rendering Results ---")
-            print(f"--- context['transactions']: {context.get('transactions')}") # Use .get for safety
-            print(f"--- context['errors']: {context.get('errors')}")
-            print(f"--- context['show_results']: {context.get('show_results')}")
-            print(f"--- context['model_error']: {context.get('model_error')}")
-            print("--------------------------------------------------------\n")
-
-            # --- Render the Results Template ---
-            template_name = 'emailparser/display_fetched_expenses.html'
-            print(f"DEBUG VIEW: Rendering results template: {template_name}") 
-            return render(request, template_name, context)
-
+        
         else:
-            # Form is invalid (e.g., password field empty)
+            # Form is invalid
             messages.error(request, "Please enter your App Password.")
-            # Fall through to render the password request page again with form errors
-
-    # --- Handle GET request (Show password form) ---
-    else: # request.method == 'GET'
+    
+    # For GET requests or when showing stored data
+    elif request.method == 'GET':
         form = AppPasswordForm()
         context['form'] = form
+    
+    # Determine which template to use
+    if context['transactions'] or ('show_results' in context and context['show_results']):
+        template_name = 'emailparser/display_fetched_expenses.html'
+    else:
+        template_name = 'emailparser/request_app_password.html'
+    
+    return render(request, template_name, context)# email_parser/views.py
+import os
+import joblib
+import nltk # type: ignore
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required 
+from django.contrib import messages 
+from django.conf import settings
+from django.utils import timezone
+from datetime import datetime
+from .email_utils import get_transactions 
+from .forms import AppPasswordForm
+from .models import StoredTransaction  # You'll need to create this model
 
-    # For GET requests OR invalid POST requests, render the password request page
-    template_name = 'emailparser/request_app_password.html' # Use the password request template
+try:
+    nltk.data.find('corpora/stopwords')
+    print("DEBUG: NLTK stopwords found.")
+except nltk.downloader.DownloadError: # Corrected exception type
+    print("DEBUG: NLTK stopwords not found, attempting download...")
+    try:
+        nltk.download('stopwords')
+        print("DEBUG: NLTK stopwords downloaded successfully.")
+    except Exception as e:
+        print(f"ERROR: Failed to download NLTK stopwords: {e}")
+
+#Model Loading
+MODEL_PATH = os.path.join(settings.BASE_DIR, 'expense_classifier.pkl')
+MODEL = None
+MODEL_LOAD_ERROR = None
+
+print(f"DEBUG: Attempting to load model from: {MODEL_PATH}")
+try:
+    if os.path.exists(MODEL_PATH):
+        MODEL = joblib.load(MODEL_PATH)
+        print("DEBUG: Expense classification model loaded successfully.")
+    else:
+        MODEL_LOAD_ERROR = f"Model file not found at '{MODEL_PATH}'. Auto-categorization disabled."
+        print(f"ERROR: {MODEL_LOAD_ERROR}")
+except Exception as e:
+    MODEL_LOAD_ERROR = f"Error loading model '{MODEL_PATH}': {e}. Auto-categorization disabled."
+    print(f"ERROR: {MODEL_LOAD_ERROR}")
+    MODEL = None
+
+
+def categorize_transactions(transactions):
+    """
+    Helper function to categorize transactions using the loaded model
+    """
+    if not MODEL:
+        # If model isn't available, mark all as N/A
+        for txn in transactions:
+            txn['category'] = 'N/A (Model Error)'
+        return transactions, []
+    
+    errors = []
+    for txn in transactions:
+        try:
+            description = txn.get('party_name', '')
+            if description:
+                predicted_category = MODEL.predict([description])[0]
+                txn['category'] = predicted_category
+                print(f"  DEBUG: Categorized '{description}' as '{predicted_category}'")
+            else:
+                txn['category'] = 'Unknown Description'
+                print("  DEBUG: Skipping categorization for transaction with empty description.")
+        except Exception as e:
+            txn['category'] = 'Categorization Error'
+            error_msg = f"Error categorizing '{description or 'N/A'}': {e}"
+            print(f"ERROR: {error_msg}")
+            errors.append(error_msg)
+    
+    return transactions, errors
+
+
+def save_transactions_to_db(user, transactions):
+    """
+    Save fetched transactions to database for this user
+    """
+    saved_count = 0
+    for txn in transactions:
+        # Use transaction_id or create a unique identifier to avoid duplicates
+        transaction_id = txn.get('transaction_id', None)
+        if not transaction_id:
+            # If no transaction_id is available, create one from date and amount
+            date_str = txn.get('date', str(datetime.now()))
+            amount = txn.get('amount', '0.00')
+            description = txn.get('party_name', 'unknown')
+            transaction_id = f"{date_str}_{amount}_{description}"
+        
+        # Check if this transaction is already stored
+        if not StoredTransaction.objects.filter(
+            user=user,
+            transaction_id=transaction_id
+        ).exists():
+            # Store new transaction
+            StoredTransaction.objects.create(
+                user=user,
+                transaction_id=transaction_id,
+                transaction_data=txn,
+                fetched_date=timezone.now()
+            )
+            saved_count += 1
+    
+    return saved_count
+
+
+@login_required 
+def fetch_and_categorize_expenses(request):
+    """
+    Handles requesting app password (GET) and fetching/categorizing expenses (POST).
+    Uses the logged-in user's email address.
+    """
+    user_email = request.user.email
+    context = {
+        'transactions': None,
+        'errors': [],
+        'model_error': MODEL_LOAD_ERROR, 
+        'form': None, #AppPasswordForm instance
+        'user_email': user_email,
+        'show_results': True,  # Always show results if there are stored transactions
+        'last_fetch': None
+    }
+
+    if not user_email:
+        messages.error(request, "Your account profile needs an email address to fetch transactions.")
+        return redirect('home') # Redirect home for now
+    
+    # Get stored transactions for this user
+    stored_transactions = StoredTransaction.objects.filter(user=request.user).order_by('-transaction_data__date')
+    
+    if stored_transactions.exists():
+        # Get the latest fetch date
+        latest_transaction = stored_transactions.order_by('-fetched_date').first()
+        context['last_fetch'] = latest_transaction.fetched_date
+        
+        # Extract transaction data from stored transactions
+        context['transactions'] = [txn.transaction_data for txn in stored_transactions]
+        messages.info(request, f"Displaying {len(stored_transactions)} stored transactions. Last updated: {context['last_fetch']}")
+
+    # Handle fetch request
+    if request.method == 'POST' and 'fetch_new' in request.POST:
+        form = AppPasswordForm(request.POST)
+        context['form'] = form
+        
+        if form.is_valid():
+            app_password = form.cleaned_data['app_password']
+            
+            # Fetching logic
+            messages.info(request, f"Fetching new transactions for {user_email}... This may take a moment.")
+            print(f"DEBUG: Fetching transactions for {user_email} via trigger view...")
+            
+            try:
+                result = get_transactions(user_email, app_password)
+                fetched_transactions = result.get('transactions', [])
+                fetch_errors = result.get('errors', [])
+                context['errors'].extend(fetch_errors)
+                
+                if fetched_transactions:
+                    # Auto-categorize the transactions
+                    categorized_transactions, categorization_errors = categorize_transactions(fetched_transactions)
+                    context['errors'].extend(categorization_errors)
+                    
+                    # Save transactions to database
+                    new_count = save_transactions_to_db(request.user, categorized_transactions)
+                    
+                    if new_count > 0:
+                        messages.success(request, f"Added {new_count} new transactions to your stored data.")
+                        
+                        # Refresh the transaction list with all stored transactions
+                        stored_transactions = StoredTransaction.objects.filter(user=request.user).order_by('-transaction_data__date')
+                        context['transactions'] = [txn.transaction_data for txn in stored_transactions]
+                        context['last_fetch'] = timezone.now()
+                    else:
+                        messages.info(request, "No new transactions found.")
+                
+                elif not fetched_transactions and not fetch_errors:
+                    messages.info(request, "No new transactions found.")
+                
+                if fetch_errors:
+                    messages.error(request, "There were errors fetching transactions. See details below.")
+            
+            except Exception as e:
+                error_msg = f"An unexpected error occurred: {e}"
+                print(f"ERROR: {error_msg}")
+                messages.error(request, error_msg)
+                context['errors'].append(error_msg)
+        
+        else:
+            # Form is invalid
+            messages.error(request, "Please enter your App Password.")
+    
+    # For GET requests or when showing stored data
+    elif request.method == 'GET':
+        form = AppPasswordForm()
+        context['form'] = form
+    
+    # Determine which template to use
+    if context['transactions'] or ('show_results' in context and context['show_results']):
+        template_name = 'emailparser/display_fetched_expenses.html'
+    else:
+        template_name = 'emailparser/request_app_password.html'
+    
     return render(request, template_name, context)

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - MoneyMap</title>
+    <style>
+        /* Reuse or adapt styles from signup.html or home.html for dark theme */
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: 40px auto; border: 1px solid #3a3f4a; border-radius: 8px; background-color: #252a33; color: #e0e0e0; }
+        h2 { text-align: center; color: #fff; margin-bottom: 25px; }
+        form p { margin-bottom: 15px; }
+        form label { display: block; margin-bottom: 5px; font-weight: bold; color: #ccc;}
+        form input[type="text"], /* Username field */
+        form input[type="password"] {
+            width: 95%; /* Adjust width as needed */
+            padding: 10px;
+            border: 1px solid #3a3f4a;
+            border-radius: 4px;
+            background-color: #1a1d24; /* Dark input background */
+            color: #e0e0e0; /* Light text in input */
+            font-size: 1em;
+        }
+        button { display: block; width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #357abd; }
+        .errorlist { color: #f8d7da; background-color: #721c24; border: 1px solid #f5c6cb; list-style: none; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 0.9em;}
+        .helptext { font-size: 0.8em; color: #aaa; margin-top: 3px; display: block;}
+        .signup-link, .password-reset-link { text-align: center; margin-top: 15px; }
+        .signup-link a, .password-reset-link a { color: #4a90e2; text-decoration: none; }
+        .signup-link a:hover, .password-reset-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h2>Login to MoneyMap</h2>
+
+    {% if form.errors %}
+         <p class="errorlist">Your username and password didn't match. Please try again.</p>
+    {% endif %}
+
+    {% if next %}
+        {% if user.is_authenticated %}
+             <p style="color:#ffc107;">Your account doesn't have access to this page. To proceed, please login with an account that has access.</p>
+        {% else %}
+             <p style="color:#ffc107;">Please login to see this page.</p>
+        {% endif %}
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+
+        {# Render fields manually for better label control #}
+        <p>
+            <label for="{{ form.username.id_for_label }}">Username (or Email):</label> {# Label Change #}
+            {{ form.username }}
+            {% for error in form.username.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+        </p>
+        <p>
+            <label for="{{ form.password.id_for_label }}">Password:</label>
+            {{ form.password }}
+            {% for error in form.password.errors %}<span class="errorlist">{{ error }}</span>{% endfor %}
+        </p>
+
+        <p><button type="submit">Login</button></p>
+        <input type="hidden" name="next" value="{{ next }}">
+    </form>
+
+    <div class="password-reset-link">
+        <p><a href="{% url 'password_reset' %}">Forgot password?</a></p>
+    </div>
+    <div class="signup-link">
+         <p>Don't have an account? <a href="{% url 'signup' %}">Sign Up</a></p> {# Link to signup #}
+    </div>
+</body>
+</html>

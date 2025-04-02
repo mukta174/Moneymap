@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoneyMap - Clarity for Your Finances</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Dark Theme Variables (Optional, but good practice) */
+        :root {
+            --bg-color: #1a1d24; /* Dark blue/grey */
+            --card-color: #252a33; /* Slightly lighter card background */
+            --text-color: #e0e0e0; /* Light grey text */
+            --primary-color: #4a90e2; /* A nice blue for accents */
+            --primary-hover: #357abd; /* Darker blue on hover */
+            --border-color: #3a3f4a;
+            --heading-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --body-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header & Navigation */
+        .main-header {
+            background-color: var(--card-color);
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; /* Make header sticky */
+            top: 0;
+            z-index: 1000; /* Ensure it's above other content */
+        }
+
+        .main-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-logo a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1.8em;
+            font-weight: bold;
+            font-family: var(--heading-font);
+        }
+
+        .main-nav ul {
+            list-style: none;
+            display: flex;
+        }
+
+        .main-nav ul li {
+            margin-left: 25px;
+        }
+
+        .main-nav ul li a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .main-nav ul li a:hover,
+        .main-nav ul li a.active {
+            color: var(--primary-color);
+        }
+
+        .nav-button {
+            background-color: var(--primary-color);
+            color: #fff !important; /* Ensure white text */
+            padding: 8px 18px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: var(--primary-hover);
+            color: #fff !important; /* Ensure white text on hover */
+        }
+
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(26, 29, 36, 0.8), rgba(26, 29, 36, 0.9)), url('/static/images/hero-bg.jpg'); /* Optional: Add a subtle background image later */
+            background-color: var(--bg-color); /* Fallback color */
+            background-size: cover;
+            background-position: center;
+            padding: 100px 0 80px 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .hero h1 {
+            font-family: var(--heading-font);
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            color: #fff; /* Brighter white for main heading */
+            font-weight: 600;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            color: var(--text-color);
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 15px 35px;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .cta-button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px); /* Slight lift effect */
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background-color: var(--bg-color);
+        }
+
+        .features h2 {
+            text-align: center;
+            font-family: var(--heading-font);
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: #fff;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+            gap: 30px;
+        }
+
+        .feature-item {
+            background-color: var(--card-color);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature-item .icon { /* Placeholder for icons */
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            /* Replace with actual icons later (e.g., Font Awesome <i> tags) */
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            background-color: rgba(74, 144, 226, 0.1); /* Faint blue background */
+            border-radius: 50%;
+        }
+
+        .feature-item h3 {
+            font-family: var(--heading-font);
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .feature-item p {
+            font-size: 1em;
+            color: var(--text-color);
+        }
+
+        /* Footer */
+        .main-footer {
+            background-color: var(--card-color);
+            color: #aaa; /* Muted footer text */
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 60px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9em;
+        }
+
+        .main-footer a {
+            color: #ccc;
+            text-decoration: none;
+        }
+        .main-footer a:hover {
+            color: var(--primary-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container">
+            <div class="brand-logo">
+                <a href="#">MoneyMap</a>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <!-- We'll replace these '#' with Django URL tags later -->
+                    <li><a href="#">Features</a></li>
+                    <li><a href="#">Pricing</a></li>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'signup' %}" class="nav-button">Sign Up</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Gain Clarity on Your Finances</h1>
+                <p>
+                    MoneyMap automatically tracks your spending from bank emails,
+                    helps you visualize habits, and empowers you to reach your financial goals.
+                </p>
+                <a href="{% url 'signup' %}" class="cta-button">Get Started Free</a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>Why Choose MoneyMap?</h2>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="icon">📧</div> <!-- Placeholder Icon -->
+                        <h3>Automated Tracking</h3>
+                        <p>Securely connect your email to automatically parse transaction alerts. No manual entry needed for supported banks.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📊</div> <!-- Placeholder Icon -->
+                        <h3>Visual Insights</h3>
+                        <p>Understand your spending patterns with clear charts and graphs. See exactly where your money goes each month.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">🎯</div> <!-- Placeholder Icon -->
+                        <h3>Smart Categorization</h3>
+                        <p>Our intelligent system automatically categorizes your expenses, saving you time and effort.</p>
+                    </div>
+                     <div class="feature-item">
+                        <div class="icon">🔒</div> <!-- Placeholder Icon -->
+                        <h3>Secure & Private</h3>
+                        <p>We prioritize your security using modern authentication (OAuth) and only request read-only access.</p>
+                    </div>
+                     <div class="feature-item">
+                        <div class="icon">📈</div> <!-- Placeholder Icon -->
+                        <h3>Budget Planning</h3>
+                        <p>Set budgets for different categories and track your progress towards financial goals (Coming Soon!).</p>
+                    </div>
+                     <div class="feature-item">
+                        <div class="icon">📱</div> <!-- Placeholder Icon -->
+                        <h3>Accessible Anywhere</h3>
+                        <p>Access your financial overview from any device with our web-based application.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Optional: Add another CTA section if desired -->
+
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>© 2025 MoneyMap. All rights reserved.</p>
+            <!-- Add links like Privacy Policy, Terms of Service later -->
+            <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </footer>
+
+</body>
+</html>

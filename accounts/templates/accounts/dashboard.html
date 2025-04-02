@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - MoneyMap</title>
+     <style>
+        /* Basic dark theme styles - ideally use a base template */
+        body { font-family: sans-serif; background-color: #1a1d24; color: #e0e0e0; padding: 20px; }
+        h1 { color: #fff; }
+        .logout-form button { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        .logout-form button:hover { background-color: #c82333; }
+        .content { margin-top: 20px; padding: 20px; background-color: #252a33; border-radius: 8px; }
+        a { color: #4a90e2; }
+    </style>
+</head>
+<body>
+    <h1>MoneyMap Dashboard</h1>
+    <p>Welcome back, {{ user.first_name|default:user.username }}!</p>
+
+    <form class="logout-form" method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+    </form>
+
+    <div class="content">
+        <h2>Your Financial Overview</h2>
+        <p>This is where your tracked expenses and insights will appear.</p>
+        <p>Your profile indicates you want to track: <strong>{{ user.profile.get_bank_to_track_display }}</strong></p>
+         <p>Occupation: {{ user.profile.occupation|default:"Not specified" }}</p>
+        <hr>
+        <p><a href="{% url 'emailparser:fetch_page' %}">Go to Email Parser</a></p> {# Link to your parser app #}
+        <!-- Add dashboard content here -->
+    </div>
+
+</body>
+</html>

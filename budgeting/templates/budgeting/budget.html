@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="budget-container">
+    <div class="budget-header">
+        <h1>Your Budget</h1>
+        <div class="budget-display" id="budgetDisplay">
+            {% if budget %}
+                <span class="budget-amount">₹{{ budget }}</span>
+            {% else %}
+                <span class="budget-empty">Not entered yet, edit your budget</span>
+            {% endif %}
+        </div>
+        <button id="editBudgetBtn" class="btn">Edit Budget</button>
+    </div>
+    
+    {% if budget %}
+    <div class="budget-progress-section">
+        <div class="progress-info">
+            <div class="progress-label">Monthly Budget Usage</div>
+            <div class="progress-values">
+                <span id="spentAmount">₹{{ spent }}</span> / <span id="totalBudget">₹{{ budget }}</span>
+            </div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-bar-inner" id="progressBar" style="width: {{ progress_percentage }}%"></div>
+        </div>
+        
+        <div class="remaining-budget">
+            You are left with <span class="highlight">₹{{ remaining }}</span> of this month's budget
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="navigation">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+
+<!-- Budget Edit Modal -->
+<div id="budgetModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Set Monthly Budget</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Enter your budget for this month</p>
+            <form id="budgetForm" method="post" action="{% url 'update_budget' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="budget">Monthly Budget:</label>
+                    <div class="input-with-currency">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" id="budget" name="budget" value="{{ budget|default:'' }}" placeholder="Enter amount" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('budgetModal');
+    const editBtn = document.getElementById('editBudgetBtn');
+    const closeBtn = document.querySelector('.close-modal');
+    
+    // Open modal
+    editBtn.addEventListener('click', function() {
+        modal.style.display = 'block';
+    });
+    
+    // Close modal
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

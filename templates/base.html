@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>{% block title %}MoneyMap{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body>
+    <nav class="sidebar" id="sidebar">
+        </button>
+        <div class="logo">MoneyMap</div>
+        <ul class="nav-menu">
+            <li class="nav-item active">
+                <a href="{% url 'emailparser:fetch_expenses' %}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Overview</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-pie"></i>
+                    Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-wallet"></i>
+                    Budget
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+            </li>        
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <form class="logout-form" method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{% static 'js/sidebar.js' %}"></script>
+</body>
+</html>

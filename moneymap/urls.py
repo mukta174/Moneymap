@@ -26,4 +26,5 @@ urlpatterns = [
     path('', accounts_views.home_page_view, name='home'),
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('budget', include('budgeting.urls')),
 ]

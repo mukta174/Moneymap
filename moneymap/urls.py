@@ -21,9 +21,10 @@ from accounts import views as accounts_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    #path('', include('helloapp.urls')),
     path('parser/', include('emailparser.urls')), 
     path('', accounts_views.home_page_view, name='home'),
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('analytics/', include('analytics.urls')),
+
 ]

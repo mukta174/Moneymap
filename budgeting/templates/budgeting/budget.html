@@ -225,8 +225,17 @@
         </div>
         
         <div class="remaining-budget">
-            You are left with <span class="highlight">₹{{ remaining }}</span> of this month's budget
-        </div>
+            {% if budget %}
+                {% if remaining >= 0 %}
+                    <p class="text-success fs-5 mt-3">You are left with ₹{{ remaining|floatformat:2 }} of this month's budget.</p>
+                {% else %}
+                    <p class="text-danger fs-5 mt-3">You have exceeded your budget by ₹{{ abs_remaining|floatformat:2 }}.</p>
+                {% endif %}
+            {% else %}
+                <p class="text-warning fs-5 mt-3">No budget set for this month.</p>
+            {% endif %}
+
+        </div>        
     </div>
     {% endif %}
     

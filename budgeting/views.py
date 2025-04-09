@@ -6,6 +6,7 @@ from .models import Budget, Expense
 from django.utils import timezone
 from datetime import datetime
 from django.db.models import Sum
+from .utils import get_total_spending_current_month, get_current_month_budget
 
 @login_required
 def budget_page(request):
@@ -51,6 +52,7 @@ def budget_page(request):
         'budget': budget,
         'spent': spent,
         'remaining': remaining,
+        'abs_remaining': abs(remaining),
         'progress_percentage': progress_percentage,
     }
     
@@ -84,3 +86,18 @@ def update_budget(request):
     except ValueError:
         return JsonResponse({'error': 'Invalid budget amount'}, status=400)
     
+def budget_view(request):
+    # Get the current month's budget and total spending using existing utilities
+    budget = get_current_month_budget(request.user)
+    spent = get_total_spending_current_month(request.user)
+    
+    # Safely calculate remaining
+    remaining = (budget or 0) - (spent or 0)
+
+    context = {
+        'budget': budget,
+        'spent': spent,
+        'remaining': remaining,
+    }
+    
+    return render(request, 'budget.html', context)

@@ -4,6 +4,12 @@ from django.contrib.auth import login # Import the login function
 from django.contrib.auth.decorators import login_required # To protect dashboard
 from .forms import CustomSignUpForm # Import your custom form
 
+from analytics.utils import (
+    get_total_spending_current_month,
+    get_num_spending_categories
+)
+from budgeting.utils import get_current_month_budget
+
 def home_page_view(request):
     """ Displays the public landing page. """
     context = {}
@@ -31,4 +37,38 @@ def dashboard_view(request):
     }
     return render(request, 'accounts/dashboard.html', context)
 
-# Note: Login and Logout views are handled by django.contrib.auth.urls
+def dashboard_view(request):
+    total_spending = get_total_spending_current_month(request.user)
+    
+    context = {
+        'total_spending': total_spending,
+        # include other context as needed
+    }
+
+    return render(request, 'accounts/dashboard.html', context)
+
+def dashboard_view(request):
+    total_spending = get_total_spending_current_month(request.user)
+    monthly_budget = get_current_month_budget(request.user)
+
+    context = {
+        'total_spending': total_spending,
+        'monthly_budget': monthly_budget,
+        # other context variables
+    }
+
+    return render(request, 'accounts/dashboard.html', context)
+
+def dashboard_view(request):
+    total_spending = get_total_spending_current_month(request.user)
+    monthly_budget = get_current_month_budget(request.user)
+    num_categories = get_num_spending_categories(request.user)
+
+    context = {
+        'total_spending': total_spending,
+        'monthly_budget': monthly_budget,
+        'num_categories': num_categories,
+        # other context...
+    }
+
+    return render(request, 'accounts/dashboard.html', context)

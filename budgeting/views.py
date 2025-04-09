@@ -83,3 +83,4 @@ def update_budget(request):
         
     except ValueError:
         return JsonResponse({'error': 'Invalid budget amount'}, status=400)
+    

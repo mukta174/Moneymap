@@ -27,15 +27,15 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
             <div class="stat-box">
                 <h3>Total Spending</h3>
-                <p>$2,450.00</p>
+                <p>₹ {{ total_spending|floatformat:2 }}</p>
             </div>
             <div class="stat-box">
                 <h3>Monthly Budget</h3>
-                <p>$3,000.00</p>
+                <p>₹ {{ monthly_budget|floatformat:2 }}</p>
             </div>
             <div class="stat-box">
                 <h3>Categories</h3>
-                <p>12 Categories</p>
+                <p>{{ num_categories }} Categories</p>
             </div>
         </div>
     </div>

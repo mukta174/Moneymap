@@ -1,14 +1,51 @@
 # accounts/views.py
 from django.shortcuts import render, redirect
 from django.contrib.auth import login # Import the login function
+from django.contrib import messages
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from .models import Profile
 from django.contrib.auth.decorators import login_required # To protect dashboard
-from .forms import CustomSignUpForm # Import your custom form
+from .forms import CustomSignUpForm, EditProfileForm # Import your custom form
 
 from analytics.utils import (
     get_total_spending_current_month,
     get_num_spending_categories
 )
 from budgeting.utils import get_current_month_budget
+
+@login_required
+def edit_profile(request):
+    user = request.user
+    profile, _ = Profile.objects.get_or_create(user=user)
+
+    if request.method == 'POST':
+        form = EditProfileForm(request.POST, user=user)
+        if form.is_valid():
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['email']
+            profile.bank_name = form.cleaned_data['bank_name']
+            user.save()
+            profile.save()
+            messages.success(request, "Profile updated successfully!")
+            return redirect('edit_profile')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = EditProfileForm(initial={
+            'username': user.username,
+            'email': user.email,
+            'bank_name': profile.bank_to_track
+        }, user=user)
+
+    return render(request, 'accounts/edit_profile.html', {'form': form})
+
+# AJAX username check
+@login_required
+def check_username(request):
+    username = request.GET.get('username', '').lower()
+    user_exists = User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists()
+    return JsonResponse({'exists': user_exists})
 
 def home_page_view(request):
     """ Displays the public landing page. """

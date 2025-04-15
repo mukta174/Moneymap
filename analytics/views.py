@@ -148,7 +148,7 @@ def analytics_dashboard(request):
     # ===================================================================
     donut_chart_image = None
     # Group small categories logic (using current month category data)
-    threshold_percentage = 3; final_category_totals = defaultdict(float); other_total = 0.0
+    threshold_percentage = 0; final_category_totals = defaultdict(float); other_total = 0.0
     if total_spending_current_month > 0:
         for category, amount in category_totals_current_month.items():
             percentage = (amount / total_spending_current_month) * 100

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django.contrib.humanize',
     "helloapp",
     "emailparser",
     "accounts",
@@ -52,7 +53,6 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     "analytics",
     'budgeting',
-    'django.contrib.humanize',
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

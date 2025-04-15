@@ -1,0 +1,649 @@
+<!-- analytics/templates/analytics/expense_report.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ report_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced Expense Report Styles */
+    .report-container {
+        background-color: #1a2035;
+        border-radius: 12px;
+        padding: 2rem;
+        margin: 2rem auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        color: #e0e0e0;
+        max-width: 1400px;
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .report-title {
+        color: #f8f9fa;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+
+    .report-period {
+        color: #6c757d;
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .report-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .btn-download {
+        background-color: #4cceac;
+        color: #141b2d;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none; /* Ensure links look like buttons */
+    }
+     .btn-download.btn-secondary { /* Style for dashboard button */
+        background-color: #2d3750;
+        color: #adb5bd;
+     }
+     .btn-download.btn-secondary:hover {
+         background-color: #3a4662;
+         color: #e0e0e0;
+         box-shadow: 0 4px 12px rgba(45, 55, 80, 0.25);
+     }
+
+
+    .btn-download:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(76, 206, 172, 0.25);
+    }
+
+    .btn-download.disabled {
+        background-color: #2d3750;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .report-section {
+        background-color: #1f2a40;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #2d3750;
+    }
+
+    .section-title {
+        color: #e0e0e0;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 0.75rem;
+    }
+
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background-color: #4cceac;
+        border-radius: 2px;
+    }
+
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, #141b2d 0%, #1a2035 100%);
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid #2d3750;
+        transition: transform 0.2s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .summary-label {
+        display: block; /* Ensure label is on its own line */
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .summary-value {
+        display: block; /* Ensure value is on its own line */
+        color: #f8f9fa;
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 0.2rem; /* Space before secondary if exists */
+    }
+     .summary-secondary {
+         display: block; /* Ensure secondary text is on its own line */
+         font-size: 0.8rem;
+         color: #adb5bd; /* Lighter secondary text */
+     }
+
+    /* --- START: ENHANCED TABLE STYLES --- */
+    .table-container {
+        border: 1px solid #2d3750;
+        border-radius: 8px;
+        overflow: hidden; /* Keep this */
+        background-color: #141b2d;
+        padding-bottom: 0.5rem; /* Add space below table */
+    }
+
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse; /* Keep this */
+        border: none; /* Remove individual cell borders, rely on row borders */
+    }
+
+    .summary-table th {
+        background-color: #2d3750; /* Keep dark header */
+        color: #adb5bd; /* Keep muted text */
+        font-weight: 600;
+        padding: 0.9rem 1.2rem; /* Slightly increase padding */
+        text-align: left;
+        font-size: 0.85rem; /* Slightly smaller header font */
+        text-transform: uppercase; /* Make headers stand out */
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #4cceac; /* Accent border below header */
+    }
+
+    .summary-table td {
+        padding: 0.9rem 1.2rem; /* Match header vertical padding */
+        border-bottom: 1px solid #2a344d; /* Slightly softer row separator */
+        vertical-align: middle; /* Align cell content vertically */
+        font-size: 0.9rem; /* Ensure data font size */
+        color: #e0e0e0; /* Ensure data text color */
+    }
+
+    .summary-table tr:last-child td {
+        border-bottom: none; /* Keep this */
+    }
+
+    .summary-table tbody tr:hover {
+        background-color: rgba(45, 55, 80, 0.5); /* Slightly stronger hover */
+    }
+
+    /* --- Column Alignment Classes --- */
+    .summary-table .col-text { /* Default/Category/Merchant/Day Name/Month Name */
+        text-align: left;
+    }
+    .summary-table .col-amount,
+    .summary-table .col-percentage-value, /* Align number part of percentage */
+    .summary-table .col-average {
+        text-align: right;
+        font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; /* Use monospace for numbers */
+        letter-spacing: 0.2px;
+    }
+    .summary-table .col-count,
+    .summary-table .col-weeknum {
+        text-align: center;
+        font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; /* Use monospace for numbers */
+    }
+    .summary-table .col-percentage { /* Container for bar+value */
+        text-align: right; /* Align the container right */
+        position: relative; /* Needed for bar positioning */
+        min-width: 100px; /* Ensure some space for the bar */
+        padding-right: 1.5rem; /* Extra padding for percentage container */
+    }
+
+
+    /* --- Percentage Bar Styles (for Category Table) --- */
+    .percentage-bar-container {
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Vertically center items */
+        justify-content: flex-end; /* Align items to the right */
+        height: 20px; /* Fixed height for container */
+        position: relative; /* Relative positioning for the bar itself */
+    }
+
+    .percentage-bar-track {
+        position: absolute;
+        left: 0;
+        right: 0; /* Stretch across available space */
+        top: 50%;
+        transform: translateY(-50%);
+        height: 8px; /* Height of the bar background */
+        background-color: rgba(45, 55, 80, 0.6); /* Darker track */
+        border-radius: 4px;
+        overflow: hidden; /* Clip the inner bar */
+        width: calc(100% - 50px); /* Leave space for the text value */
+        margin-right: 50px; /* Space between bar end and text */
+    }
+
+    .percentage-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%; /* Fill the track height */
+        background-color: #4cceac; /* Accent color for the bar */
+        border-radius: 4px; /* Match track radius */
+        transition: width 0.3s ease-out; /* Animate width changes */
+        width: var(--bar-width, 0%);
+    }
+
+    .percentage-value {
+        /* Positioned by flexbox */
+        font-size: 0.85rem;
+        font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; /* Use monospace */
+        color: #e0e0e0; /* Ensure value is visible */
+        z-index: 1; /* Make sure value is above bar track */
+        min-width: 45px; /* Ensure space for "100.0%" */
+        text-align: right;
+    }
+
+    /* --- Specific Table Adjustments --- */
+    .merchant-table .col-merchant { /* Class applied to both TH and TD */
+        max-width: 250px; /* Prevent super long merchant names in TD */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .merchant-table td.col-merchant:hover { /* Show full name on hover in TD */
+        white-space: normal;
+        overflow: visible;
+        background-color: #1a2035; /* Add background to make it readable */
+        position: relative; /* Ensure it appears above others */
+        z-index: 10;
+    }
+
+    /* --- Chart Title --- */
+    .chart-title {
+        color: #adb5bd;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1rem; /* More space below title */
+        padding-left: 0.5rem; /* Indent slightly */
+    }
+    /* --- END: ENHANCED TABLE STYLES --- */
+
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .insights-list {
+        display: grid;
+        gap: 1rem;
+        padding: 0; /* Remove default list padding */
+        list-style: none; /* Remove default list bullets */
+    }
+
+    .insight-item {
+        background-color: rgba(76, 206, 172, 0.1);
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid #4cceac;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: #e0e0e0; /* Ensure text color */
+    }
+
+    .insight-item::before {
+        content: "💡";
+        font-size: 1.25rem;
+        opacity: 0.8;
+    }
+
+    .no-data-message {
+        color: #6c757d;
+        padding: 2rem;
+        text-align: center;
+        font-style: italic;
+    }
+     .error-message {
+        background-color: rgba(244, 124, 124, 0.1); /* Reddish background */
+        border: 1px solid #f47c7c;
+        border-left: 4px solid #f47c7c; /* Thicker left border */
+        color: #f47c7c; /* Reddish text */
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+     }
+
+
+    @media (max-width: 768px) {
+        .report-container {
+            padding: 1.5rem;
+            margin: 1rem;
+        }
+
+        .report-title {
+            font-size: 1.75rem;
+        }
+
+        .report-actions {
+            width: 100%;
+            justify-content: flex-start; /* Stack buttons left on small screens */
+            margin-top: 1rem; /* Add space below title section */
+        }
+
+        .report-grid {
+            grid-template-columns: 1fr; /* Stack cards/tables vertically */
+        }
+
+        .table-container {
+            overflow-x: auto; /* Allow horizontal scrolling for tables */
+        }
+        /* Make table text slightly smaller on mobile */
+        .summary-table th, .summary-table td {
+             font-size: 0.8rem;
+             padding: 0.7rem 0.9rem;
+         }
+         .percentage-bar-track {
+             width: calc(100% - 45px);
+             margin-right: 45px;
+         }
+         .percentage-value {
+             font-size: 0.75rem;
+             min-width: 40px;
+         }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="report-container">
+
+    <!-- Report Header -->
+    <div class="report-header">
+        <div class="report-title-section">
+            <h1 class="report-title">{{ report_title }}</h1>
+            <p class="report-period">{{ report_period }}</p>
+        </div>
+        <div class="report-actions">
+            {% url 'analytics:reports' as current_report_url %}
+            {% with base_query=request.GET.urlencode %} {# Capture base query string #}
+                <a href="{{ current_report_url }}?{{ base_query }}&download=pdf" {# Ensure this generates the correct URL + parameters #}
+                    class="btn-download {% if not pdf_generation_enabled %}disabled{% endif %}"
+                    {% if not pdf_generation_enabled %}aria-disabled="true" title="PDF Generation currently unavailable"{% else %}target="_blank"{% endif %}>
+                    <i class="fas fa-file-pdf"></i> PDF <!-- Optional: Add icon if FontAwesome is available -->
+                </a>
+                <a href="{{ current_report_url }}?{{ base_query }}&download=csv" class="btn-download">
+                   <i class="fas fa-file-csv"></i> CSV <!-- Optional: Add icon -->
+                </a>
+            {% endwith %}
+             <a href="{% url 'analytics:dashboard' %}" class="btn-download btn-secondary">
+                <i class="fas fa-tachometer-alt"></i> Dashboard <!-- Optional: Add icon -->
+             </a>
+        </div>
+    </div>
+
+    <!-- Error Messages -->
+    {% if parse_errors %}
+    <div class="report-section">
+        <h2 class="section-title">Processing Issues</h2>
+        {% for error in parse_errors %}
+            <div class="error-message">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Overall Summary Section -->
+    <div class="report-section">
+        <h2 class="section-title">Overall Summary</h2>
+        <div class="report-grid">
+            <div class="summary-card">
+                <span class="summary-label">Total Spending</span>
+                <span class="summary-value">₹{{ total_spending|floatformat:2|intcomma|default:"0.00" }}</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Total Transactions</span>
+                <span class="summary-value">{{ transaction_count|intcomma|default:"0" }}</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Average Transaction</span>
+                <span class="summary-value">₹{{ avg_transaction|floatformat:2|intcomma|default:"0.00" }}</span>
+            </div>
+             <div class="summary-card">
+                <span class="summary-label">Average Daily Spend</span>
+                <span class="summary-value">₹{{ avg_daily|floatformat:2|intcomma|default:"0.00" }}</span>
+            </div>
+             <div class="summary-card">
+                <span class="summary-label">Largest Transaction</span>
+                {% if largest_transaction.date %}
+                    <span class="summary-value">₹{{ largest_transaction.amount|floatformat:2|intcomma }}</span>
+                    <span class="summary-secondary">At {{ largest_transaction.merchant|truncatechars:30 }} on {{ largest_transaction.date|date:"d M Y" }}</span>
+                {% else %}
+                    <span class="summary-value">-</span><span class="summary-secondary"> </span> {# Use non-breaking space for layout consistency #}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabular Breakdowns Section -->
+    <div class="report-section">
+        <h2 class="section-title">Spending Breakdowns</h2>
+        <div class="report-grid">
+
+            <!-- Spending by Category -->
+            <div>
+                <h3 class="chart-title">By Category</h3>
+                <div class="table-container">
+                    {% if sorted_categories %}
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th class="col-text">Category</th>
+                                <th class="col-amount">Amount (₹)</th>
+                                <th class="col-percentage">% Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat_data in sorted_categories %}
+                            <tr>
+                                <td class="col-text">{{ cat_data.name }}</td>
+                                <td class="col-amount">{{ cat_data.amount|floatformat:2|intcomma }}</td>
+                                <td class="col-percentage">
+                                    <div class="percentage-bar-container">
+                                        <div class="percentage-bar-track">
+                                            <div class="percentage-bar" style="width: {{ cat_data.percentage|default:0|floatformat:1 }}%;"></div>
+                                        </div>
+                                        <span class="percentage-value">{{ cat_data.percentage|floatformat:1 }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="no-data-message">No category data</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="no-data-message">No category spending data.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Spending by Merchant -->
+            <div>
+                <h3 class="chart-title">By Merchant (Top {{ sorted_merchants|slice:":25"|length }})</h3>
+                 <div class="table-container merchant-table">
+                     {% if sorted_merchants %}
+                     <table class="summary-table">
+                         <thead>
+                             <tr>
+                                 <th class="col-text col-merchant">Merchant</th>
+                                 <th class="col-amount">Amount (₹)</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                            {% for merchant, amount in sorted_merchants|slice:":25" %}
+                                <tr class="{% if merchant == 'Unknown' %}merchant-unknown{% endif %}">
+                                    <td class="col-text col-merchant" title="{{ merchant }}">{{ merchant|truncatechars:40 }}</td> {# Add title attribute for full name #}
+                                    <td class="col-amount">{{ amount|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% empty %}
+                             <tr><td colspan="2" class="no-data-message">No merchant data</td></tr>
+                            {% endfor %}
+                         </tbody>
+                     </table>
+                     {% else %}
+                     <p class="no-data-message">No merchant spending data.</p>
+                     {% endif %}
+                 </div>
+                 {% if sorted_merchants|length > 25 %}
+                     <p style="font-size: 0.8em; text-align: center; margin-top: 5px; color: #a0a0a0;">Showing top 25. Download CSV for full list.</p>
+                 {% endif %}
+            </div>
+
+            <!-- Spending by Day of Week -->
+            <div>
+                 <h3 class="chart-title">By Day of Week</h3>
+                  <div class="table-container day-table">
+                      {% if day_of_week_summary %}
+                      <table class="summary-table">
+                          <thead>
+                              <tr>
+                                  <th class="col-text">Day</th>
+                                  <th class="col-amount">Total (₹)</th>
+                                  <th class="col-count"># Txns</th>
+                                  <th class="col-average">Avg (₹)</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for day_data in day_of_week_summary %}
+                              <tr>
+                                  <td class="col-text">{{ day_data.day_name }}</td>
+                                  <td class="col-amount">{{ day_data.amount|floatformat:2|intcomma }}</td>
+                                  <td class="col-count">{{ day_data.count|intcomma }}</td>
+                                  <td class="col-average">{{ day_data.average|floatformat:2|intcomma }}</td>
+                              </tr>
+                              {% empty %}
+                               <tr><td colspan="4" class="no-data-message">No daily data</td></tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                      {% else %}
+                       <p class="no-data-message">No daily spending data.</p>
+                      {% endif %}
+                  </div>
+            </div>
+
+            <!-- Spending by Month (Yearly Report Only) -->
+            {% if full_year %}
+            <div>
+                 <h3 class="chart-title">By Month</h3>
+                  <div class="table-container">
+                      {% if monthly_summary %}
+                      <table class="summary-table">
+                          <thead>
+                              <tr>
+                                  <th class="col-text">Month</th>
+                                  <th class="col-amount">Total (₹)</th>
+                                  <th class="col-count"># Txns</th>
+                                  <th class="col-average">Avg (₹)</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for month_data in monthly_summary %}
+                              <tr>
+                                  <td class="col-text">{{ month_data.month_name }}</td>
+                                  <td class="col-amount">{{ month_data.amount|floatformat:2|intcomma }}</td>
+                                  <td class="col-count">{{ month_data.count|intcomma }}</td>
+                                  <td class="col-average">{{ month_data.average|floatformat:2|intcomma }}</td>
+                              </tr>
+                              {% empty %}
+                               <tr><td colspan="4" class="no-data-message">No monthly data</td></tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                      {% else %}
+                       <p class="no-data-message">No monthly spending data.</p>
+                      {% endif %}
+                  </div>
+            </div>
+            {% endif %}
+
+            <!-- Spending by Week (Yearly Report Only) -->
+             {% if full_year %}
+            <div>
+                 <h3 class="chart-title">By Week Number</h3>
+                  <div class="table-container">
+                      {% if weekly_summary %}
+                      <table class="summary-table">
+                          <thead>
+                              <tr>
+                                  <th class="col-weeknum">Week #</th>
+                                  <th class="col-amount">Total (₹)</th>
+                                  <th class="col-count"># Txns</th>
+                                  <th class="col-average">Avg (₹)</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for week_data in weekly_summary %}
+                              <tr>
+                                  <td class="col-weeknum">{{ week_data.week_num }}</td>
+                                  <td class="col-amount">{{ week_data.amount|floatformat:2|intcomma }}</td>
+                                  <td class="col-count">{{ week_data.count|intcomma }}</td>
+                                  <td class="col-average">{{ week_data.average|floatformat:2|intcomma }}</td>
+                              </tr>
+                              {% empty %}
+                               <tr><td colspan="4" class="no-data-message">No weekly data</td></tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                      {% else %}
+                       <p class="no-data-message">No weekly spending data.</p>
+                      {% endif %}
+                  </div>
+            </div>
+            {% endif %}
+
+        </div> {# End report-grid #}
+    </div>
+
+    <!-- Insights Section -->
+    {% if insights %}
+    <div class="report-section">
+        <h2 class="section-title">Key Observations</h2>
+        <ul class="insights-list">
+            {% for insight in insights %}
+                <li class="insight-item">{{ insight }}</li>
+            {% empty %}
+                 <p class="no-data-message" style="padding: 10px 0;">No specific insights generated.</p>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+</div> {# End report-container #}
+
+{% endblock %}

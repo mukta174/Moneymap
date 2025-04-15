@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    {% load humanize %}  {# <--- ADD THIS LINE #}
+    <style>
+        /* Basic PDF Styling */
+        @page {
+            size: letter; /* Common page size */
+            margin: 0.75in; /* Adjust margins as needed */
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif; /* Common sans-serif fonts */
+            font-size: 9pt; /* Smaller font size for PDF often looks better */
+            color: #333333;
+            line-height: 1.4;
+        }
+
+        /* ... rest of your CSS ... */
+
+         .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 8pt;
+            color: #888;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>{{ report_title }}</h1>
+    <p class="report-period">{{ report_period }}</p>
+
+    <!-- Error Messages -->
+    {% if parse_errors %}
+        <h2>Processing Issues</h2>
+        {% for error in parse_errors %}
+            <div class="error-message">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Overall Summary -->
+    <h2>Overall Summary</h2>
+    <div class="summary-item">
+        <span class="summary-label">Total Spending</span>
+        <span class="summary-value">₹{{ total_spending|floatformat:2|intcomma|default:"0.00" }}</span>
+    </div>
+    <div class="summary-item">
+        <span class="summary-label">Total Transactions</span>
+        <span class="summary-value">{{ transaction_count|intcomma|default:"0" }}</span> {# Uses intcomma #}
+    </div>
+    <div class="summary-item">
+        <span class="summary-label">Average Transaction</span>
+        <span class="summary-value">₹{{ avg_transaction|floatformat:2|intcomma|default:"0.00" }}</span> {# Uses intcomma #}
+    </div>
+     <div class="summary-item">
+        <span class="summary-label">Average Daily Spend</span>
+        <span class="summary-value">₹{{ avg_daily|floatformat:2|intcomma|default:"0.00" }}</span> {# Uses intcomma #}
+    </div>
+     <div class="summary-item">
+        <span class="summary-label">Largest Transaction</span>
+        {% if largest_transaction.date %}
+            <span class="summary-value">₹{{ largest_transaction.amount|floatformat:2|intcomma }}</span> {# Uses intcomma #}
+            <span class="summary-secondary">At {{ largest_transaction.merchant }} ({{ largest_transaction.category }}) on {{ largest_transaction.date|date:"d M Y" }}</span>
+        {% else %}
+            <span class="summary-value">-</span>
+        {% endif %}
+    </div>
+
+
+    <!-- Tabular Breakdowns Section -->
+    <h2>Spending Breakdowns</h2>
+
+    <!-- By Category Table -->
+    <h3>By Category</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th class="text-right nowrap">Amount (₹)</th>
+                <th class="text-right nowrap">% of Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat_data in sorted_categories %}
+            <tr>
+                <td>{{ cat_data.name }}</td>
+                <td class="text-right nowrap">{{ cat_data.amount|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+                <td class="text-right nowrap">{{ cat_data.percentage|floatformat:1 }}%</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="no-data">No category spending data</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- By Merchant Table -->
+    <h3>By Merchant (Top 50)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Merchant</th>
+                <th class="text-right nowrap">Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+           {% for merchant, amount in sorted_merchants|slice:":50" %} {# Limit for PDF #}
+               <tr class="{% if merchant == 'Unknown' %}merchant-unknown{% endif %}">
+                   <td>{{ merchant }}</td> {# No truncate needed for PDF ideally #}
+                   <td class="text-right nowrap">{{ amount|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+               </tr>
+           {% empty %}
+            <tr><td colspan="2" class="no-data">No merchant spending data</td></tr>
+           {% endfor %}
+        </tbody>
+    </table>
+    {% if sorted_merchants|length > 50 %}
+        <p style="font-size: 8pt; text-align: center; color: #777;">(Showing Top 50 Merchants)</p>
+    {% endif %}
+
+
+    <!-- By Day of Week Table -->
+    <h3>By Day of Week</h3>
+     <table>
+         <thead>
+             <tr>
+                 <th>Day</th>
+                 <th class="text-right nowrap">Total (₹)</th>
+                 <th class="text-center nowrap"># Txns</th>
+                 <th class="text-right nowrap">Avg (₹)</th>
+             </tr>
+         </thead>
+         <tbody>
+             {% for day_data in day_of_week_summary %}
+             <tr>
+                 <td>{{ day_data.day_name }}</td>
+                 <td class="text-right nowrap">{{ day_data.amount|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+                 <td class="text-center nowrap">{{ day_data.count|intcomma }}</td> {# Uses intcomma #}
+                 <td class="text-right nowrap">{{ day_data.average|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+             </tr>
+             {% empty %}
+              <tr><td colspan="4" class="no-data">No daily spending data</td></tr>
+             {% endfor %}
+         </tbody>
+     </table>
+
+
+    <!-- By Month Table (Yearly Report Only) -->
+    {% if full_year %}
+    <h3>By Month</h3>
+      <table>
+          <thead>
+              <tr>
+                  <th>Month</th>
+                  <th class="text-right nowrap">Total (₹)</th>
+                  <th class="text-center nowrap"># Txns</th>
+                  <th class="text-right nowrap">Avg (₹)</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for month_data in monthly_summary %}
+              <tr>
+                  <td>{{ month_data.month_name }}</td>
+                  <td class="text-right nowrap">{{ month_data.amount|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+                  <td class="text-center nowrap">{{ month_data.count|intcomma }}</td> {# Uses intcomma #}
+                  <td class="text-right nowrap">{{ month_data.average|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+              </tr>
+              {% empty %}
+               <tr><td colspan="4" class="no-data">No monthly spending data</td></tr>
+              {% endfor %}
+          </tbody>
+      </table>
+    {% endif %}
+
+    <!-- By Week Table (Yearly Report Only) -->
+    {% if full_year %}
+    <h3>By Week Number</h3>
+       <table>
+           <thead>
+               <tr>
+                   <th class="text-center">Week #</th>
+                   <th class="text-right nowrap">Total (₹)</th>
+                   <th class="text-center nowrap"># Txns</th>
+                   <th class="text-right nowrap">Avg (₹)</th>
+               </tr>
+           </thead>
+           <tbody>
+               {% for week_data in weekly_summary %}
+               <tr>
+                   <td class="text-center">{{ week_data.week_num }}</td>
+                   <td class="text-right nowrap">{{ week_data.amount|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+                   <td class="text-center nowrap">{{ week_data.count|intcomma }}</td> {# Uses intcomma #}
+                   <td class="text-right nowrap">{{ week_data.average|floatformat:2|intcomma }}</td> {# Uses intcomma #}
+               </tr>
+               {% empty %}
+                <tr><td colspan="4" class="no-data">No weekly spending data</td></tr>
+               {% endfor %}
+           </tbody>
+       </table>
+    {% endif %}
+
+
+    <!-- Insights Section -->
+    {% if insights %}
+    <h2>Key Observations</h2>
+    <ul class="insights-list">
+        {% for insight in insights %}
+            <li class="insight-item">{{ insight }}</li>
+        {% empty %}
+             <li>No specific insights generated for this period.</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="footer">
+        Report Generated on {% now "d M Y H:i" %}
+    </div>
+
+</body>
+</html>

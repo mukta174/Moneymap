@@ -7,4 +7,5 @@ app_name = 'analytics' # Define an app namespace
 urlpatterns = [
     # Use the new view function name
     path('', views.analytics_dashboard, name='dashboard'),
+    path('reports', views.expense_report, name='reports'),
 ]

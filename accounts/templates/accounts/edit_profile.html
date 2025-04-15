@@ -1,11 +1,12 @@
 <!-- templates/accounts/edit_profile.html -->
-
+{% extends 'base.html' %}
 {% load static %}
 <!DOCTYPE html>
 <html>
 <head>
     <title>Edit Profile</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
+    {% block extra_css %}
     <style>
         body {
             background-color: #1a1a1a;
@@ -115,9 +116,11 @@
             margin-top: 5px;
         }
     </style>
+    {% endblock %}
 </head>
 <body>
 
+{% block content %}
 <div class="card">
     <h2>Edit Profile</h2>
 
@@ -197,3 +200,4 @@
 
 </body>
 </html>
+{% endblock %}

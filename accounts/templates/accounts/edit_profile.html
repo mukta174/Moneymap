@@ -9,24 +9,25 @@
     {% block extra_css %}
     <style>
         body {
-            background-color: #1a1a1a;
+            background-color: #121212;
             color: white;
             font-family: 'Segoe UI', sans-serif;
-            padding: 40px;
         }
 
         .card {
-            background-color: #2d2d2d;
-            border-radius: 10px;
+            background-color: #1e1e1e;
+            border-radius: 12px;
             padding: 30px;
-            max-width: 500px;
-            margin: auto;
-            box-shadow: 0 0 10px rgba(84, 131, 231, 0.3);
+            max-width: 800px;
+            margin: 50px auto;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
 
         h2 {
             text-align: center;
-            margin-bottom: 30px;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #ffffff;
         }
 
         .form-group {
@@ -36,7 +37,8 @@
 
         .form-group label {
             position: absolute;
-            top: -21px;
+            top: -23px;
+            font-size: 23px;
             left: 8px;
             transition: 0.2s;
             color: #458ec5;
@@ -47,6 +49,7 @@
             width: 94%;
             background-color: #1a1a1a;
             color: #f2f2f2;
+            font-size: 23px;
             border: 2px solid #555;
             padding: 14px;
             border-radius: 8px;
@@ -70,18 +73,19 @@
 
         .form-group input:focus + label,
         .form-group input:not(:placeholder-shown) + label {
-            top: -22px;
+            top: -28px;
             left: 10px;
-            font-size: 17px;
+            font-size: 23px;
             color: #458ec5;
         }
 
         .btn {
-            background-color: #65a1c4;
+            background-color: #1b86c5;
             border: none;
             padding: 10px 20px;
             color: black;
             font-weight: bold;
+            font-size: 20px;
             border-radius: 5px;
             cursor: pointer;
             display: block;
@@ -96,7 +100,7 @@
         .back-btn a {
             color: #68a1c7;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 20px;
         }
 
         .message {

@@ -10,18 +10,13 @@ from django.utils import timezone
 from datetime import datetime
 from .email_utils import get_transactions 
 from .forms import AppPasswordForm
-from .models import StoredTransaction  # You'll need to create this model
+from .models import StoredTransaction 
+import nltk
 
 try:
     nltk.data.find('corpora/stopwords')
-    print("DEBUG: NLTK stopwords found.")
-except nltk.downloader.DownloadError: # Corrected exception type
-    print("DEBUG: NLTK stopwords not found, attempting download...")
-    try:
-        nltk.download('stopwords')
-        print("DEBUG: NLTK stopwords downloaded successfully.")
-    except Exception as e:
-        print(f"ERROR: Failed to download NLTK stopwords: {e}")
+except LookupError:
+    nltk.download('stopwords')
 
 #Model Loading
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'expense_classifier.pkl')

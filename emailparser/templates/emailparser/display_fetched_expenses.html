@@ -1,157 +1,168 @@
-{% extends 'base.html' %}
-{% load static %} {# Needed if using static within the blocks, also good practice #}
+{% load static %} {# Optional: if you decide to use static files later #}
 
-{% block title %}Your Expense Transactions - MoneyMap{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Expense Transactions</title>
+    <style>
+    :root {
+        --sidebar-width: 240px;
+        --collapsed-width: 60px;
+        --primary-color: #4a90e2;
+        --dark-bg: #1a1d24;
+        --darker-bg: #15171e;
+        --content-bg: #252a33;
+        --hover-bg: #2f3541;
+    }
 
-{% block extra_css %}
-<style>
     body { 
-        color: #adb5bd; 
+        font-family: 'Segoe UI', sans-serif; 
+        background-color: var(--dark-bg); 
+        color: #e0e0e0;
+        margin: 0;
+        min-height: 100vh;
     }
-    h1, h3, h4 {
-        color: #f8f9fa; 
-        margin-bottom: 15px;
-    }
-    p {
-         margin-bottom: 1rem; 
-         color: #adb5bd; 
-    }
-     p strong {
-        color: #fff; 
-     }
 
-    .error { color: #f0a0a0; font-weight: bold; margin-bottom: 10px; border: 1px solid #dc3545; padding: 10px; background-color: #4e1a1f; border-radius: 4px; }
-    .success { color: #a3e4a3; font-weight: bold; }
-    .info { color: #9eeaf9; } 
-    .transaction-list { margin-top: 15px; border-collapse: collapse; width: 100%; border: 1px solid #495057;}
-    .transaction-list th, .transaction-list td { border: 1px solid #495057;  padding: 8px; text-align: left; vertical-align: top; }
-    .transaction-list th {
-        background-color: #343a40; 
+    .error {
+        color: #ff6666;
         font-weight: bold;
-        color: #f8f9fa; 
+        margin-bottom: 10px;
+        border: 1px solid #ff4444;
+        padding: 10px;
+        background-color: var(--darker-bg);
+        border-radius: 4px;
     }
-     .transaction-list td {
-        color: #adb5bd;
-     }
-     .transaction-list td:nth-child(2) { 
-        color: #dee2e6;
-     }
 
-    .button-link { display: inline-block; padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white !important; border: none; border-radius: 4px; font-size: 1em; text-decoration: none; margin-right: 10px; }
-    .button-link:hover { background-color: #0056b3; color: white !important; }
-    .button-link i { margin-right: 5px; } 
+    .transaction-list { 
+        margin-top: 15px;
+        border-collapse: collapse;
+        width: 100%;
+        background-color: var(--content-bg);
+    }
 
-    hr { margin-top: 30px; margin-bottom: 30px; border: 0; border-top: 1px solid #495057; } 
+    .transaction-list th, 
+    .transaction-list td {
+        border: 1px solid var(--hover-bg);
+        padding: 12px;
+        color: #e0e0e0;
+    }
+
+    .transaction-list th {
+        background-color: var(--darker-bg);
+        font-weight: 600;
+    }
+
+    button, .button-link {
+        background-color: var(--primary-color);
+        color: white !important;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover, .button-link:hover {
+        background-color: #357abd;
+        color: white !important;
+    }
 
     .alert {
         padding: 15px;
         margin-bottom: 20px;
+        border-radius: 8px;
         border: 1px solid transparent;
-        border-radius: 4px;
-        color: #f8f9fa; 
     }
+
     .alert-danger {
-        color: #f8d7da;
-        background-color: #58151c; 
-        border-color: #a03540; 
+        background-color: #2c0b0e;
+        border-color: #4a1419;
+        color: #ff6b6b;
     }
+
     .alert-success {
-        color: #d1e7dd; 
-        background-color: #144821;
-        border-color: #3b804c; /* Darker green border */
+        background-color: #0d2818;
+        border-color: #1a472a;
+        color: #6bff8b;
     }
+
     .alert-warning {
-        color: #fff3cd; /* Light yellow text */
-        background-color: #664d03; /* Dark yellow/brown background */
-        border-color: #b39230; /* Darker yellow/brown border */
+        background-color: #2d2400;
+        border-color: #4a3d00;
+        color: #ffd166;
     }
+
     .alert-info {
-        color: #cfe2ff; /* Light blue text */
-        /* background-color: #0c5460; */ /* Original dark teal - REMOVED */
-        background-color: #21313f; /* Dark blueish-grey background */
-        border-color: #455e77; /* Darker blueish-grey border */
+        background-color: #0c2d33;
+        border-color: #1a4a54;
+        color: #66d9ff;
     }
-     /* --- END: UPDATED ALERT STYLES --- */
 
+    .badge {
+        background-color: var(--primary-color);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
 
-    /* Badge styles (Ensure contrast) */
-    .badge { display: inline-block; padding: .35em .65em; font-size: .75em; font-weight: 700; line-height: 1; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; }
-    .bg-primary { background-color: #0d6efd !important; }
-    .bg-secondary { background-color: #6c757d !important; }
-    .bg-success { background-color: #198754 !important; }
-    .bg-danger { background-color: #dc3545 !important; }
-    .bg-warning { background-color: #ffc107 !important; color: #000 !important; } /* Keep black text */
-    .bg-info { background-color: #0dcaf0 !important; color: #000 !important; } /* Keep black text */
-
-    /* Card styling for Fetch Form (Dark Theme) */
     .card {
-        border: 1px solid #495057; /* Darker border */
-        border-radius: 4px;
-        margin-bottom: 20px;
-        background-color: #343a40; /* Dark card background */
-        color: #f8f9fa; /* Default light text for card */
+        background-color: var(--content-bg);
+        border: 1px solid var(--hover-bg);
+        border-radius: 8px;
+        margin-bottom: 25px;
     }
+
     .card-header {
-        background-color: #212529; /* Very dark header */
-        padding: 15px;
-        border-bottom: 1px solid #495057; /* Darker border */
-        color: #f8f9fa; /* Ensure header text is light */
+        background-color: var(--darker-bg);
+        padding: 20px;
+        border-bottom: 1px solid var(--hover-bg);
     }
-     .card-header h3 {
-        margin-bottom: 0; /* Remove extra margin below h3 in header */
-        color: #f8f9fa;
-     }
+
     .card-body {
-        padding: 15px;
+        padding: 20px;
     }
 
-    /* Form Group styling within Card (Dark Theme) */
-    .form-group { margin-bottom: 15px; }
+    .form-group input {
+        background-color: var(--darker-bg);
+        border: 1px solid var(--hover-bg);
+        color: #e0e0e0;
+        border-radius: 6px;
+        padding: 10px 16px;
+    }
+
     .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: #f8f9fa; 
+        color: #a0a0a0;
+        margin-bottom: 8px;
     }
-    .form-group input[type="password"] {
-        width: calc(100% - 18px);
-        max-width: 400px;
-        padding: 8px;
-        border: 1px solid #6c757d;
-        border-radius: 4px;
-        box-sizing: border-box;
-        background-color: #495057; 
-        color: #f8f9fa; 
-    }
-     .form-group .error { 
-        color: #f0a0a0; 
-        font-weight: normal;
-        font-size: 0.9em;
-        border: none; 
-        padding: 5px 0 0 0; 
-        background-color: transparent; 
-        margin-bottom: 0;
-     }
 
-    .mt-2 { margin-top: 10px !important; }
-    .text-muted { color: #adb5bd !important; }
+    .text-muted {
+        color: #808080 !important;
+    }
 
     .last-updated {
-        background-color: #2c3034; 
-        border: 1px solid #495057; 
-        color: #adb5bd; 
-        padding: 10px;
-        border-radius: 4px;
-        margin-bottom: 15px;
+        background-color: var(--darker-bg);
+        border: 1px solid var(--hover-bg);
+        color: #a0a0a0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 25px;
     }
-    .last-updated p { margin-bottom: 0; } 
-    .last-updated strong { color: #f8f9fa; } 
-    .table-responsive-container { overflow-x:auto; }
 
-</style>
-{% endblock extra_css %}
+    h1, h2, h3, h4 {
+        color: #ffffff;
+    }
 
-{% block content %}
+    .content-card {
+        background-color: var(--content-bg);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    </style>
+</head>
+<body>
 
     <h1>Your Expense Transactions</h1>
     <p>Showing results for email: <strong>{{ user_email }}</strong></p>
@@ -188,26 +199,22 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="{{ form.app_password.id_for_label }}">App Password for {{ user_email }}</label>
-                    {{ form.app_password }} {# Renders the password input widget #}
-                     {% if form.app_password.errors %}
-                        {# Use the .error class defined in CSS #}
-                        <div class="error">{{ form.app_password.errors }}</div>
-                     {% endif %}
+                    {{ form.app_password }}
                 </div>
                 <button type="submit" name="fetch_new" class="button-link mt-2">
-                    <i class="fas fa-sync-alt"></i> Refresh Transactions
+                    Refresh Transactions
                 </button>
                 <p class="text-muted mt-2">
                     <small>Clicking this button will fetch new transactions without removing your existing stored transactions.</small>
                 </p>
             </form>
-        </div>
+        </div>  
     </div>
 
     {# --- Display Specific Errors gathered during fetch/categorization --- #}
     {% if errors %}
-        <div class="alert alert-danger"> {# Using alert-danger for consistency #}
-            <h4>Encountered Errors During Last Fetch:</h4>
+        <div class="error">
+            <h4>Encountered Errors:</h4>
             <ul>
                 {% for error in errors %}
                     <li>{{ error }}</li>
@@ -218,54 +225,55 @@
 
     {# --- Display Transactions Table --- #}
     {% if transactions %}
-        <h4 style="margin-top: 20px;">Stored Transactions:</h4>
-        {# Wrap table in a div for responsiveness #}
-        <div class="table-responsive-container">
-            <table class="transaction-list">
-                <thead>
+        <h4 style="margin-top: 20px;">Transactions Found:</h4>
+        <table class="transaction-list">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount (Rs.)</th>
+                    <th>Party Name</th>
+                    <th>VPA ID</th>
+                    <th>Predicted Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in transactions %}
                     <tr>
-                        <th>Date</th>
-                        <th>Amount (Rs.)</th>
-                        <th>Party Name</th>
-                        <th>VPA ID</th>
-                        <th>Predicted Category</th>
+                        <td>{{ txn.date|default:"N/A" }}</td>
+                        <td>{{ txn.amount|floatformat:2|default:"N/A" }}</td>
+                        <td>{{ txn.party_name|default:"N/A" }}</td>
+                        <td>{{ txn.vpa_id|default:"N/A" }}</td>
+                        <td>
+                            {% with category_str=txn.category|stringformat:"s" %}
+                                {% if category_str == 'Categorization Error' %}
+                                    <span class="badge bg-danger">{{ category_str }}</span>
+                                {% elif category_str == 'Unknown Description' %}
+                                    <span class="badge bg-secondary">{{ category_str }}</span>
+                                {% elif category_str == 'N/A (Model Error)' %}
+                                    <span class="badge bg-warning">{{ category_str }}</span>
+                                {% elif category_str %}
+                                    <span class="badge bg-primary">{{ category_str }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for txn in transactions %}
-                        <tr>
-                            <td>{{ txn.date|date:"Y-m-d H:i"|default:"N/A" }}</td> {# Format date #}
-                            <td>{{ txn.amount|floatformat:2|default:"N/A" }}</td>
-                            <td>{{ txn.party_name|default:"N/A" }}</td>
-                            <td>{{ txn.vpa_id|default:"N/A" }}</td>
-                            <td>
-                                {% with category_str=txn.category|stringformat:"s" %}
-                                    {% if category_str == 'Categorization Error' %}
-                                        <span class="badge bg-danger">{{ category_str }}</span>
-                                    {% elif category_str == 'Unknown Description' %}
-                                        <span class="badge bg-secondary">{{ category_str }}</span>
-                                    {% elif category_str == 'N/A (Model Error)' %}
-                                        <span class="badge bg-warning">{{ category_str }}</span>
-                                    {% elif category_str %}
-                                        <span class="badge bg-primary">{{ category_str }}</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Not Categorized</span> {# More descriptive #}
-                                    {% endif %}
-                                {% endwith %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 20px;">No transaction details are currently stored. Try fetching transactions.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% elif show_results and not errors %}
-        <p class="alert alert-info" style="margin-top: 20px;">No matching UPI transaction emails found, or emails did not contain recognizable details in the last fetch attempt.</p>
-    {% elif not show_results and not transactions %}
-         <p class="alert alert-info" style="margin-top: 20px;">No transactions are currently stored. Use the form above to fetch them from your email.</p>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center;">No transaction details were found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif show_results and not errors %} 
+        <p class="info" style="margin-top: 20px;">No matching UPI transaction emails found or emails did not contain recognizable details.</p>
     {% endif %}
 
-{% endblock content %}
+    {# --- Links for Next Actions --- #}
+    <div style="margin-top: 30px;">
+        <a href="{% url 'dashboard' %}" class="button-link" style="background-color: #6c757d;">Back to Home</a>
+    </div>
+
+</body>
+</html>

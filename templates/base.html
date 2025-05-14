@@ -12,34 +12,39 @@
 </head>
 <body>
     <nav class="sidebar" id="sidebar">
-        </button>
         <div class="logo">MoneyMap</div>
         <ul class="nav-menu">
-            <li class="nav-item active">
-                <a href="{% url 'emailparser:fetch_expenses' %}" class="nav-link">
+            <li class="nav-item {% if request.path == '/dashboard/' %}span-active{% endif %}">
+                <a href="{% url 'dashboard' %}" class="nav-link">
                     <i class="fas fa-home"></i>
-                    <span>Overview</span>
+                    <span>Dashboard</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if request.path == '/emailparser/fetch_expenses/' %}span-active{% endif %}">
+                <a href="{% url 'emailparser:fetch_expenses' %}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Overview 
+                </a>
+            </li>
+            <li class="nav-item {% if request.path == '/analytics/reports/' %}span-active{% endif %}">
                 <a href="{% url 'analytics:reports' %}" class="nav-link">
                     <i class="fas fa-chart-bar"></i>
                     Reports 
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if request.path == '/analytics/dashboard/' %}span-active{% endif %}">
                 <a class="nav-link" href="{% url 'analytics:dashboard' %}">
                     <i class="fas fa-chart-pie"></i>
                     Analytics
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if request.path == '/budget_page/' %}span-active{% endif %}">
                 <a href="{% url 'budget_page' %}" class="nav-link">
                     <i class="fas fa-wallet"></i>
                     Budget
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if request.path == '/edit_profile/' %}span-active{% endif %}">
                 <a href="{% url 'edit_profile' %}" class="nav-link">
                     <i class="fas fa-user-edit"></i>
                     Edit Profile
